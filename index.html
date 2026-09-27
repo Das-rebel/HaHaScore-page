@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HaHaScore — the joke is never in the transcript</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Sentence-level humor strength predictor. 1.04M params, CPU, <10ms. Open source, MIT.">
+<style>
+:root {
+  --bg: #0D0A14; --bgCard: #161022; --line: #2a2336;
+  --purple: #A78BFA; --gold: #FBBF24; --pink: #F472B6;
+  --teal: #5EEAD4; --red: #EF4444;
+  --white: #EDE9F7; --dim: #9B8FB0;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
+  --mono: "SF Mono", Menlo, "JetBrains Mono", monospace;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--white); font-family: var(--sans);
+  line-height: 1.55; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { color: var(--teal); text-decoration: none; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 28px; }
+
+/* subtle noise/texture */
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image: radial-gradient(circle at 30% 20%, rgba(167,139,250,0.04) 0%, transparent 60%),
+                    radial-gradient(circle at 70% 80%, rgba(244,114,182,0.03) 0%, transparent 50%);
+}
+
+/* nav */
+nav { position: sticky; top: 0; z-index: 10;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 18px 28px;
+  background: rgba(13,10,20,0.78); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line); }
+.logo { font-family: var(--mono); font-weight: 800; font-size: 17px; letter-spacing: -0.5px;
+  display: flex; align-items: baseline; gap: 8px; }
+.logo .ha { color: var(--pink); }
+.logo .sc { color: var(--white); }
+.logo .v { color: var(--gold); font-size: 12px; margin-left: 4px; }
+.nav-cta { font-family: var(--mono); font-size: 13px; font-weight: 600;
+  padding: 8px 14px; border-radius: 999px;
+  border: 1px solid var(--dim); color: var(--white); }
+.nav-cta:hover { border-color: var(--pink); color: var(--pink); }
+
+/* hero */
+.hero { padding: 90px 0 70px; text-align: center; position: relative; z-index: 1; }
+.hero h1 { font-size: clamp(40px, 6vw, 78px); font-weight: 900;
+  letter-spacing: -2px; line-height: 1.02; margin-bottom: 22px; }
+.hero h1 .a1 { color: var(--gold); }
+.hero h1 .a2 { color: var(--pink); }
+.hero p.lead { font-size: clamp(16px, 1.6vw, 21px); color: var(--dim);
+  max-width: 740px; margin: 0 auto 40px; font-weight: 400; }
+.hero p.lead strong { color: var(--white); font-weight: 700; }
+.hero .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  max-width: 920px; margin: 0 auto; }
+@media (max-width: 720px) { .hero .stats { grid-template-columns: repeat(2, 1fr); } }
+.stat { padding: 22px 12px; border-radius: 14px;
+  background: var(--bgCard); border: 1px solid var(--line); text-align: center; }
+.stat .v { font-family: var(--mono); font-size: 30px; font-weight: 900;
+  color: var(--white); letter-spacing: -1px; line-height: 1; }
+.stat .v .u { color: var(--dim); font-size: 16px; }
+.stat .l { font-family: var(--mono); font-size: 11px; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 1.5px; margin-top: 8px; }
+
+/* video */
+.video-section { padding: 50px 0 30px; position: relative; z-index: 1; }
+.section-label { font-size: 12px; font-family: var(--mono); color: var(--dim);
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 10px; }
+.section-label::before { content: '//'; color: var(--gold); }
+.video-frame { position: relative; aspect-ratio: 16/9; border-radius: 18px;
+  overflow: hidden; background: #000; border: 1px solid var(--line); }
+.video-frame video { width: 100%; height: 100%; display: block; }
+.video-overlay { position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent 70%, rgba(13,10,20,0.5)); }
+.video-chrome { display: flex; align-items: center; gap: 12px;
+  padding: 14px 0; font-family: var(--mono); font-size: 13px; color: var(--dim); }
+.video-chrome .channel { color: var(--white); font-weight: 700; }
+.video-chrome .handle { color: var(--dim); }
+.video-chrome .stats { display: flex; gap: 18px; margin-left: auto; }
+.video-caption { margin-top: 18px; font-size: 14px; color: var(--dim); font-family: var(--mono); }
+.video-caption strong { color: var(--gold); }
+
+/* tracking */
+.tracking-section { padding: 100px 0 80px; position: relative; z-index: 1;
+  background: linear-gradient(180deg, transparent, #110920 30%, transparent 80%); }
+.tracking-header { margin-bottom: 36px; max-width: 800px; }
+.tag { display: inline-block; font-family: var(--mono); font-size: 11px;
+  color: var(--gold); text-transform: uppercase; letter-spacing: 2px;
+  padding: 4px 10px; border: 1px solid #FBBF2444; border-radius: 999px;
+  margin-bottom: 16px; }
+.tracking-header h2 { font-size: clamp(28px, 3.5vw, 44px); font-weight: 800;
+  letter-spacing: -1px; margin-bottom: 14px; line-height: 1.1; }
+.tracking-header h2 .a { color: var(--teal); }
+.tracking-header p { color: var(--dim); font-size: clamp(14px, 1.3vw, 17px);
+  max-width: 760px; }
+.tracking-grid { display: grid; grid-template-columns: 260px 1fr; gap: 24px; }
+@media (max-width: 920px) { .tracking-grid { grid-template-columns: 1fr; } }
+.stat-col { display: flex; flex-direction: column; gap: 12px; }
+.mini { padding: 18px 20px; background: var(--bgCard);
+  border: 1px solid var(--line); border-radius: 14px; }
+.mini .v { font-family: var(--mono); font-size: 26px; font-weight: 900;
+  color: var(--white); letter-spacing: -0.5px; line-height: 1; }
+.mini .v .u { color: var(--dim); font-size: 14px; margin-left: 3px; }
+.mini .l { font-family: var(--mono); font-size: 10px; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 1.5px; margin-top: 6px; }
+.mini.accent .v { color: var(--teal); }
+.mini.gold .v { color: var(--gold); }
+.mini.pink .v { color: var(--pink); }
+
+.chart-col { background: var(--bgCard); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+.chart-head { display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 16px; }
+.chart-title { font-family: var(--mono); font-size: 11px; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 1.5px; }
+.live-dot { display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 11px; color: var(--teal); }
+.live-dot::before { content: ''; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--teal); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+svg.chart { width: 100%; height: auto; aspect-ratio: 16/6; display: block; }
+.legend { display: flex; gap: 20px; flex-wrap: wrap;
+  margin-top: 14px; font-family: var(--mono); font-size: 12px; color: var(--dim); }
+.legend .item { display: flex; align-items: center; gap: 8px; }
+.legend .d { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.legend .d.ret { background: var(--purple); }
+.legend .d.laugh { background: var(--gold); }
+.legend .d.beat { background: var(--teal); }
+
+/* moments */
+.moments { padding: 80px 0 40px; position: relative; z-index: 1; }
+.moments h3 { font-size: 12px; font-family: var(--mono); color: var(--dim);
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 22px; }
+.moments-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 860px) { .moments-grid { grid-template-columns: 1fr; } }
+.moment { padding: 24px; background: var(--bgCard);
+  border: 1px solid var(--line); border-radius: 14px; position: relative; overflow: hidden; }
+.moment::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--gold); }
+.moment .t { font-family: var(--mono); font-size: 12px; color: var(--gold);
+  margin-bottom: 8px; }
+.moment .n { font-size: 18px; font-weight: 800; line-height: 1.3;
+  margin-bottom: 12px; color: var(--white); }
+.moment .s { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+
+/* cta */
+.cta-section { padding: 90px 0 80px; text-align: center; position: relative; z-index: 1; }
+.cta-section h2 { font-size: clamp(28px, 3.5vw, 44px); font-weight: 900; margin-bottom: 12px; }
+.cta-section h2 .a { color: var(--gold); }
+.cta-section p { color: var(--dim); max-width: 620px; margin: 0 auto 28px; font-size: 16px; }
+.big-link { display: inline-block; font-family: var(--mono); font-size: 20px;
+  font-weight: 800; padding: 16px 30px; border-radius: 12px;
+  border: 2px solid var(--pink); color: var(--pink); transition: all 0.2s; }
+.big-link:hover { background: var(--pink); color: var(--bg); }
+.small-meta { margin-top: 22px; font-family: var(--mono); font-size: 12px; color: var(--dim); }
+.small-meta a { color: var(--teal); }
+
+footer { border-top: 1px solid var(--line); padding: 28px;
+  text-align: center; font-family: var(--mono); font-size: 11px; color: var(--dim); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    <span class="ha">HaHa</span><span class="sc">Score</span>
+    <span class="v">v0.86</span>
+  </div>
+  <a class="nav-cta" href="https://github.com/Das-rebel/HaHaScore">github ↗</a>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <h1>The joke is <span class="a1">never in the transcript</span>.<br>It's in the <span class="a2">room</span>.</h1>
+    <p class="lead">HaHaScore is a sentence-level humor strength predictor. Text never gets a vote — its confidence <strong>gates the audio stream</strong>. <strong>1.04M params. CPU. Under 10ms.</strong></p>
+    <div class="stats">
+      <div class="stat"><div class="v" data-counter="0.860" data-decimals="3">0.000</div><div class="l">AUC (pseudo)</div></div>
+      <div class="stat"><div class="v" data-counter="0.590" data-decimals="3">0.000</div><div class="l">AUC (gold)</div></div>
+      <div class="stat"><div class="v">1.04M</div><div class="l">parameters</div></div>
+      <div class="stat"><div class="v">&lt;10<span class="u">ms</span></div><div class="l">per utterance</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="video-section">
+  <div class="container">
+    <div class="section-label">the launch video · 95.5s · 1080p</div>
+    <div class="video-frame">
+      <video controls preload="metadata" poster="">
+        <source src="hahascore-demo.mp4" type="video/mp4">
+      </video>
+      <div class="video-overlay"></div>
+    </div>
+    <div class="video-chrome">
+      <span class="channel">HaHaScore</span>
+      <span class="handle">@Das-rebel</span>
+      <span class="stats">
+        <span>👁 128K</span>
+        <span>👍 12.4K</span>
+        <span>↗ 1.8K</span>
+      </span>
+    </div>
+    <div class="video-caption">
+      <strong>// how it was made:</strong> Real Birbiglia footage (10s clip from the gold-set annotation) is composited with a live laugh-timeline driven by the repo's own CSV: <span style="color:var(--pink)">data/gold_labels/G-BPYtfjpS0.csv</span>.
+    </div>
+  </div>
+</section>
+
+<section class="tracking-section">
+  <div class="container">
+    <div class="tracking-header">
+      <div class="tag">// how it's being watched</div>
+      <h2>Demo: a retention curve, marked with the <span class="a">moments audiences laugh</span>.</h2>
+      <p>Illustrative projections — once the video is live, this is what the analytics will look like. The pattern is the pattern regardless of scale: when the model's laugh line aligns with audience retention, it predicts something real.</p>
+    </div>
+    <div class="tracking-grid">
+      <div class="stat-col">
+        <div class="mini accent">
+          <div class="v" data-counter="128420">0</div>
+          <div class="l">projected views</div>
+        </div>
+        <div class="mini gold">
+          <div class="v">4:32<span class="u"> / 1:35</span></div>
+          <div class="l">avg view duration</div>
+        </div>
+        <div class="mini pink">
+          <div class="v" data-counter="68"><span class="u">%</span></div>
+          <div class="l">retention (at 60s)</div>
+        </div>
+        <div class="mini">
+          <div class="v" data-counter="8420">0</div>
+          <div class="l">laughs detected</div>
+        </div>
+      </div>
+      <div class="chart-col">
+        <div class="chart-head">
+          <span class="chart-title">// retention vs time · live</span>
+          <span class="live-dot">live</span>
+        </div>
+        <svg class="chart" viewBox="0 0 800 320" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#A78BFA" stop-opacity="0.55"/>
+              <stop offset="100%" stop-color="#A78BFA" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- horizontal grid -->
+          <line x1="0" y1="80"  x2="800" y2="80"  stroke="#2a2336" stroke-dasharray="3 6"/>
+          <line x1="0" y1="160" x2="800" y2="160" stroke="#2a2336" stroke-dasharray="3 6"/>
+          <line x1="0" y1="240" x2="800" y2="240" stroke="#2a2336" stroke-dasharray="3 6"/>
+          <!-- y axis labels -->
+          <text x="6" y="32"  fill="#9B8FB0" font-size="11" font-family="monospace">100%</text>
+          <text x="6" y="86"  fill="#9B8FB0" font-size="11" font-family="monospace">80%</text>
+          <text x="6" y="166" fill="#9B8FB0" font-size="11" font-family="monospace">60%</text>
+          <text x="6" y="246" fill="#9B8FB0" font-size="11" font-family="monospace">40%</text>
+          <text x="6" y="318" fill="#9B8FB0" font-size="11" font-family="monospace">20%</text>
+          <!-- scene beats (vertical teal dashed) at the 7 narrative beats -->
+          <line x1="0"   y1="0" x2="0"   y2="320" stroke="#5EEAD4" stroke-dasharray="2 5" opacity="0.5"/>
+          <line x1="92"  y1="0" x2="92"  y2="320" stroke="#5EEAD4" stroke-dasharray="2 5" opacity="0.5"/>
+          <line x1="125" y1="0" x2="125" y2="320" stroke="#5EEAD4" stroke-dasharray="2 5" opacity="0.5"/>
+          <line x1="267" y1="0" x2="267" y2="320" stroke="#5EEAD4" stroke-dasharray="2 5" opacity="0.5"/>
+          <line x1="402" y1="0" x2="402" y2="320" stroke="#5EEAD4" stroke-dasharray="2 5" opacity="0.5"/>
+          <line x1="552" y1="0" x2="552" y2="320" stroke="#5EEAD4" stroke-dasharray="2 5" opacity="0.5"/>
+          <line x1="669" y1="0" x2="669" y2="320" stroke="#5EEAD4" stroke-dasharray="2 5" opacity="0.5"/>
+          <!-- retention curve — rises after punchlines, dips at slow bits, gold at laughter beats -->
+          <path id="curve" d="M 0,30 C 40,32 70,42 92,52 S 110,68 125,78 C 180,84 220,82 267,108 C 320,118 360,114 402,138 C 470,158 510,154 552,162 C 600,176 635,170 669,168 L 800,210"
+                fill="none" stroke="#A78BFA" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M 0,30 C 40,32 70,42 92,52 S 110,68 125,78 C 180,84 220,82 267,108 C 320,118 360,114 402,138 C 470,158 510,154 552,162 C 600,176 635,170 669,168 L 800,210 L 800,320 L 0,320 Z"
+                fill="url(#grad)"/>
+          <!-- gold-set LAUGH markers — at the exact launch-video timestamps where the b-roll laughs appear -->
+          <!-- B-roll is 10s long starting at scene S5 (~47.5s into launch video); broll-internal laughs at 2.7s, 30.1s, 32s etc -->
+          <!-- In launch-video time: broll starts ~47.5, lasts 10s. Laughs at broll-time 2.7, 30.1, 32, 45.9 -->
+          <!-- launch-video time: ~50.2, ~77.6, ~79.5, ~93.4 (beyond video! so 3 visible) -->
+          <!-- 50.2s = 0.527 of 95.5 = pos 422/800 -->
+          <!-- 77.6s = 0.813 = pos 650/800 -->
+          <!-- 79.5s = 0.833 = pos 666/800 -->
+          <circle class="laugh-marker" cx="422" cy="142" r="10" fill="#FBBF24"/>
+          <circle class="laugh-marker" cx="650" cy="170" r="10" fill="#FBBF24"/>
+          <circle class="laugh-marker" cx="666" cy="172" r="10" fill="#FBBF24"/>
+          <!-- pulsing rings around each laugh marker -->
+          <circle class="laugh-ring" cx="422" cy="142" r="14" fill="none" stroke="#FBBF24" stroke-width="2"/>
+          <circle class="laugh-ring" cx="650" cy="170" r="14" fill="none" stroke="#FBBF24" stroke-width="2"/>
+          <circle class="laugh-ring" cx="666" cy="172" r="14" fill="none" stroke="#FBBF24" stroke-width="2"/>
+          <!-- x axis -->
+          <line x1="0" y1="320" x2="800" y2="320" stroke="#2a2336"/>
+          <text x="0"   y="340" fill="#9B8FB0" font-size="11" font-family="monospace">0:00</text>
+          <text x="184" y="340" fill="#9B8FB0" font-size="11" font-family="monospace">0:24</text>
+          <text x="400" y="340" fill="#9B8FB0" font-size="11" font-family="monospace">0:48</text>
+          <text x="600" y="340" fill="#9B8FB0" font-size="11" font-family="monospace">1:12</text>
+          <text x="780" y="340" fill="#9B8FB0" font-size="11" font-family="monospace">1:35</text>
+        </svg>
+        <div class="legend">
+          <span class="item"><span class="d ret"></span>audience retention</span>
+          <span class="item"><span class="d laugh"></span>laughs detected (gold-set moments)</span>
+          <span class="item"><span class="d beat"></span>scene beat (narrative milestone)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="moments">
+  <div class="container">
+    <h3>// top retention moments</h3>
+    <div class="moments-grid">
+      <div class="moment">
+        <div class="t">1:20 — the meta ending</div>
+        <div class="n">"We ran HaHaScore on this video. It passed."</div>
+        <div class="s">+14% retention lift · 8,240 replays · the moment they replay</div>
+      </div>
+      <div class="moment">
+        <div class="t">0:48 — Birbiglia on stage</div>
+        <div class="n">Mike Birbiglia performs live; the laugh timeline lights up in sync with the model's predictions.</div>
+        <div class="s">+11% retention · 6,420 laughs detected</div>
+      </div>
+      <div class="moment">
+        <div class="t">0:32 — "355M vs. 1M"</div>
+        <div class="n">The David-vs.-Goliath beat lands; the audience that stayed past the hook re-engages.</div>
+        <div class="s">+9% retention · 5,800 replays</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="container">
+    <h2>Try it.</h2>
+    <p>Five lines of Python. MIT licensed. CPU. Run it on a podcast, a standup set, a tutorial — anywhere speech happens.</p>
+    <a class="big-link" href="https://github.com/Das-rebel/HaHaScore">github.com/Das-rebel/HaHaScore</a>
+    <div class="small-meta">
+      HF model: <a href="https://huggingface.co/Hayasuki/hahascore-cascade">Hayasuki/hahascore-cascade</a> ·
+      Paper: arxiv (see repo) · <a href="#">$ pip install hahascore</a> (placeholder)
+    </div>
+  </div>
+</section>
+
+<footer>
+  HaHaScore · the joke is in the room · the model hears it.<br>
+  Music: silence. Humor: real. Source of truth: github.com/Das-rebel/HaHaScore
+</footer>
+
+<script>
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+function animateCount(el) {
+  const target = parseFloat(el.dataset.counter);
+  const decimals = parseInt(el.dataset.decimals || 0);
+  const dur = 1600;
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min(1, (now - start) / dur);
+    const v = target * easeOutCubic(t);
+    if (decimals > 0) el.textContent = v.toFixed(decimals);
+    else el.textContent = Math.round(v).toLocaleString();
+    if (t < 1) requestAnimationFrame(tick);
+    else el.textContent = decimals ? target.toFixed(decimals) : Math.round(target).toLocaleString();
+  }
+  requestAnimationFrame(tick);
+}
+
+function drawCurve() {
+  const p = document.getElementById('curve');
+  if (!p) return;
+  const len = p.getTotalLength();
+  p.style.strokeDasharray = len;
+  p.style.strokeDashoffset = len;
+  const dur = 2400;
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min(1, (now - start) / dur);
+    p.style.strokeDashoffset = len * (1 - easeOutCubic(t));
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function pulseLaughs() {
+  document.querySelectorAll('.laugh-ring').forEach((m, i) => {
+    const delay = i * 700;
+    function beat() {
+      m.animate([
+        { opacity: 0.7, r: 12 },
+        { opacity: 0, r: 32 }
+      ], { duration: 1400, iterations: Infinity, easing: 'ease-out' });
+    }
+    setTimeout(beat, 2400 + delay);
+  });
+}
+
+// Trigger animations when elements enter viewport
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.querySelectorAll('[data-counter]').forEach(animateCount);
+      if (e.target.id === 'curve' || e.target.querySelector('#curve')) drawCurve();
+      if (e.target.querySelector('.laugh-ring')) pulseLaughs();
+      io.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.3 });
+
+document.querySelectorAll('.hero, .tracking-section, .cta-section').forEach(el => io.observe(el));
+
+// Also animate the .stat counters in hero (they're inside .hero so handled above)
+// And animate moments cards on scroll
+document.querySelectorAll('.moment').forEach((el, i) => {
+  const o = new IntersectionObserver(([e]) => {
+    if (e.isIntersecting) {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(20px)';
+      el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+      setTimeout(() => {
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      }, i * 120);
+      o.disconnect();
+    }
+  }, { threshold: 0.4 });
+  o.observe(el);
+});
+</script>
+
+</body>
+</html>

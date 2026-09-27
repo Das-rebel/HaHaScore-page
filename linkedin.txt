@@ -1,0 +1,11 @@
+I built HaHaScore — a sentence-level humor strength predictor. 0.860 AUC on its shipped eval set, 1.04M parameters, runs on a CPU in under 10 ms.
+
+The insight: text alone (RoBERTa, 355M parameters, AUC 0.499 — indistinguishable from random) can't detect humor. The signal lives in audio — prosody, timing, vocal inflection. So HaHaScore uses text only as a confidence prior that *gates* the audio stream. When the words are sure, the sound gets through.
+
+Trained on StandUp4AI: 12 gold-labeled specials from Comedy Central Stand-Up + Montreux Comedy. Mike Birbiglia, Mae Martin, Élodie Poux, Jayde Adams, Nash, more.
+
+Open-source (MIT). 5-line inference. HuggingFace model + arxiv paper in the repo.
+
+The next 0.02 AUC doesn't come from more compute — it comes from humans labeling laughter on new clips. If you can spare a few hours, PRs welcome.
+
+github.com/Das-rebel/HaHaScore

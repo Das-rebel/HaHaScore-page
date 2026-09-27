@@ -1,0 +1,27 @@
+HaHaScore · sentence-level humor strength predictor · 0.860 AUC · MIT · 1.04M params · CPU <10ms
+
+The transcript was never the joke. The laugh is in the room.
+
+HaHaScore listens. Whisper finds every word. Twenty segments. RoBERTa reads each one. Then — here's the twist — text doesn't get a vote. Its confidence gates the audio stream. When the words are sure, the sound gets through. 1.04M parameters. CPU. Under 10ms.
+
+We tested it on the gold set: Comedy Central Stand-Up + Montreux Comedy. 12 specials. English, Spanish, French. Mike Birbiglia, Mae Martin, Élodie Poux, Jayde Adams, Nash. Real laughs marked at real timestamps — the visualization in the video is driven straight from data/gold_labels/.
+
+0:00 Every comedian knows the bomb
+0:09 The transcript was never the joke
+0:15 How HaHaScore listens — the Cascade Gate
+0:32 Why 355M parameters is a coin flip (and 1M params beats it)
+0:48 Tested on the gold set — Mike Birbiglia on stage
+1:06 Humor ≠ laughter (0.860 vs 0.590)
+1:20 We ran it on this video. It passed.
+
+Architecture: RoBERTa-large + WavLM-base-plus + 23-dim prosody + 4-dim position, fused via the Cascade Gate (text confidence as prior → audio gated → BiGRU arcs → sigmoid per-segment score). 1.04M params beats cross-attention by +0.002 AUC.
+
+The model is a feature, not a bug. Humor ≠ Laughter — pseudo-label AUC is 0.860, gold-label AUC is 0.590. The 0.27 gap is the audience. Predict the bit; humans still decide to laugh.
+
+Five-line inference. HuggingFace: Hayasuki/hahascore-cascade. MIT license. Try it on your podcast, your standup set, your tutorial — anywhere speech happens.
+
+github.com/Das-rebel/HaHaScore
+
+If you can spare a few hours on a clip and a CSV — open a PR. The next 0.02 AUC doesn't come from compute.
+
+#humordetection #computervision #openai #speechrecognition #machinelearning #audio #openresearch #standup #computationalcreativity
