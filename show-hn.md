@@ -1,35 +1,24 @@
 # Title
-Show HN: HaHaScore — sentence-level humor strength predictor (0.860 AUC, 1.04M params, CPU)
+Show HN: HaHaScore — sentence-level humor strength predictor (5-fold AUC 0.69 humor / 0.55 gold, 1.04M params, CPU)
 
 # Body
-Hi HN — I built a humor detector.
+Hi HN — I built a humor detector, then I caught myself faking the validation.
 
-For years, joke-detection research kept dying the same way: throw RoBERTa at a transcript and call it comedy. AUC: ~0.50. The transcript was never the joke. The laugh is in the room — in prosody, in timing, in vocal inflection. Delivery is everything.
+HaHaScore reads transcripts and audio together via a Cascade Gate: text confidence gates the audio stream, then a BiGRU scores per-segment humor strength. 1.04M parameters, runs on CPU, under 10 ms per utterance.
 
-HaHaScore listens. Whisper transcribes with word-level timestamps. Twenty equal-length segments per utterance. RoBERTa reads each one. Then — here's the twist — **text doesn't get a vote**. Its confidence gates the audio stream. When the words are sure, the sound gets through. 1.04M parameters. Runs on CPU. Under 10 ms per utterance.
+**The lesson from this project**: single-fold AUC on imbalanced speech-humor tasks (~1% positive rate, n ≤ 20 gold videos) systematically overstates performance by 0.15–0.20 AUC. Speaker identity and language channel leak through random K-fold splits.
 
-**Numbers (5-fold CV, StandUp4AI, 12 gold-labeled specials from Comedy Central Stand-Up + Montreux Comedy — Mike Birbiglia, Mae Martin, Élodie Poux, Jayde Adams, Nash, more):**
+After running a 5×3 repeated speaker-disjoint CV (15 measurements, paired bootstrap 95% CI), the honest 5-fold numbers are:
 
-| Model | AUC | Params | Notes |
-|---|---|---|---|
-| Text-only RoBERTa-large | 0.499 | 355M | indistinguishable from random |
-| Audio-only WavLM LR | 0.538 | 94M | moderate signal |
-| Bridge 4 (audio + BiGRU arcs) | 0.842 ± 0.027 | 790K | sequential modeling |
-| v6 cross-attention fusion | 0.858 ± 0.015 | 1.16M | text ⇄ audio |
-| **Cascade Gate v7 (new SOTA)** | **0.860 ± 0.018** | **1.04M** | **text gates audio** |
+| Metric | Single-fold (claimed) | 5×3 repeated speaker-disjoint CV |
+|---|---|---|
+| Humor AUC | 0.823 | **0.6924 ± 0.0359** |
+| Gold AUC | 0.613 | **0.5453 ± 0.1313** |
 
-The weird number: **pseudo-label AUC is 0.860, gold-label AUC is 0.590.** That's not a bug — it means the model measures the intrinsic humor strength of the delivery, while human laughter depends on the room, the audience, the shared knowledge. The 0.27 gap *is* the audience.
+The single-fold numbers were folded into an earlier "Cascade Gate v7 AUC 0.860" headline that turned out to be a leakage artifact. The 5×3 CV is what the paper now reports.
 
-**Honest limitations:**
-- Text features beyond RoBERTa CLS would likely help
-- Prosody is engineered (RMS/ZCR/MFCC/pitch), not learned
-- "Funny" is culturally loaded; the gold set leans English/Western standup
+I deleted the HF model deployment (0 downloads over 8 days anyway), kept the audit and falsification scripts in the repo, and drafted a methodology paper: *"Evaluating Speech-Humor Models Without Identity Leakage: A Self-Falsification Case Study."* The paper itself is **the artifact** — it documents the 5×3 repeated speaker-disjoint CV protocol that catches single-fold fold-luck at p < 0.001 (one such claim reversed from +0.163 to −0.127 across 15 measurements).
 
-**Open asks:**
-- Help label a few hours of laughter on new specials — PRs welcome
-- Try it on your own podcast / set; I want to see where it breaks
-- Architecture feedback welcome — the cascade gate is a small idea, maybe it generalizes
+The model itself is at github.com/Das-rebel/HaHaScore. Open source (MIT), reproducible, currently archived pending re-validation on a larger labeled corpus.
 
-**GitHub:** github.com/Das-rebel/HaHaScore
-**HF model:** Hayasuki/hahascore-cascade
-**5-line inference.** MIT. Happy to answer questions.
+The next 0.05 AUC doesn't come from compute. It comes from humans labeling ~100 more gold videos across more languages — the 12-video gold set this design was tuned against is too small to support any single-fold number. If you can spare a few hours on a clip, open a PR.

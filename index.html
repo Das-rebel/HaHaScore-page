@@ -63,6 +63,8 @@ nav { position: sticky; top: 0; z-index: 10;
 .stat .v .u { color: var(--dim); font-size: 16px; }
 .stat .l { font-family: var(--mono); font-size: 11px; color: var(--dim);
   text-transform: uppercase; letter-spacing: 1.5px; margin-top: 8px; }
+.stat .l .l-sub { text-transform: none; letter-spacing: 0; font-size: 9px;
+  color: var(--dim); opacity: 0.6; }
 
 /* video */
 .video-section { padding: 50px 0 30px; position: relative; z-index: 1; }
@@ -167,7 +169,7 @@ footer { border-top: 1px solid var(--line); padding: 28px;
 <nav>
   <div class="logo">
     <span class="ha">HaHa</span><span class="sc">Score</span>
-    <span class="v">v0.86</span>
+    <span class="v">v0.69</span>
   </div>
   <a class="nav-cta" href="https://github.com/Das-rebel/HaHaScore">github ↗</a>
 </nav>
@@ -177,8 +179,8 @@ footer { border-top: 1px solid var(--line); padding: 28px;
     <h1>The joke is <span class="a1">never in the transcript</span>.<br>It's in the <span class="a2">room</span>.</h1>
     <p class="lead">HaHaScore is a sentence-level humor strength predictor. Text never gets a vote — its confidence <strong>gates the audio stream</strong>. <strong>1.04M params. CPU. Under 10ms.</strong></p>
     <div class="stats">
-      <div class="stat"><div class="v" data-counter="0.860" data-decimals="3">0.000</div><div class="l">AUC (pseudo)</div></div>
-      <div class="stat"><div class="v" data-counter="0.590" data-decimals="3">0.000</div><div class="l">AUC (gold)</div></div>
+      <div class="stat"><div class="v" data-counter="0.6924" data-decimals="4">0.000</div><div class="l">humor AUC <span class="l-sub">(5-fold speaker-disjoint)</span></div></div>
+      <div class="stat"><div class="v" data-counter="0.5453" data-decimals="4">0.000</div><div class="l">gold AUC <span class="l-sub">(5-fold speaker-disjoint)</span></div></div>
       <div class="stat"><div class="v">1.04M</div><div class="l">parameters</div></div>
       <div class="stat"><div class="v">&lt;10<span class="u">ms</span></div><div class="l">per utterance</div></div>
     </div>

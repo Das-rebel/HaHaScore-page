@@ -1,11 +1,11 @@
-I built HaHaScore — a sentence-level humor strength predictor. 0.860 AUC on its shipped eval set, 1.04M parameters, runs on a CPU in under 10 ms.
+I built HaHaScore — a sentence-level humor strength predictor. 1.04M parameters, runs on a CPU in under 10 ms.
 
 The insight: text alone (RoBERTa, 355M parameters, AUC 0.499 — indistinguishable from random) can't detect humor. The signal lives in audio — prosody, timing, vocal inflection. So HaHaScore uses text only as a confidence prior that *gates* the audio stream. When the words are sure, the sound gets through.
 
-Trained on StandUp4AI: 12 gold-labeled specials from Comedy Central Stand-Up + Montreux Comedy. Mike Birbiglia, Mae Martin, Élodie Poux, Jayde Adams, Nash, more.
+The honest 5-fold speaker-disjoint number is **humor AUC 0.69 / gold AUC 0.55** on a 12-video gold set. Earlier single-fold claims (0.86, 0.82) were leakage artifacts — running 5×3 repeated speaker-disjoint CV with bootstrap CIs revealed identity and language-channel confounds that random splits hide. The repo documents the falsification experiments in detail.
 
-Open-source (MIT). 5-line inference. HuggingFace model + arxiv paper in the repo.
+Open-source (MIT). The falsification scripts (5×3 CV, per-language diagnostic) are the most reusable part.
 
-The next 0.02 AUC doesn't come from more compute — it comes from humans labeling laughter on new clips. If you can spare a few hours, PRs welcome.
+The next 0.05 AUC doesn't come from more compute — it comes from humans labeling laughter on new clips. If you can spare a few hours, PRs welcome.
 
 github.com/Das-rebel/HaHaScore

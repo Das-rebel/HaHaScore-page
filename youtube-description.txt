@@ -1,27 +1,25 @@
-HaHaScore · sentence-level humor strength predictor · 0.860 AUC · MIT · 1.04M params · CPU <10ms
+HaHaScore · sentence-level humor strength predictor · 5-fold speaker-disjoint CV humor AUC 0.69 / gold AUC 0.55 · MIT · 1.04M params · CPU <10ms
 
-The transcript was never the joke. The laugh is in the room.
+**Honest numbers, not the inflated 0.860.**
 
-HaHaScore listens. Whisper finds every word. Twenty segments. RoBERTa reads each one. Then — here's the twist — text doesn't get a vote. Its confidence gates the audio stream. When the words are sure, the sound gets through. 1.04M parameters. CPU. Under 10ms.
+Earlier single-fold claims (v7 AUC 0.860, v10 AUC 0.823) were leakage artifacts — speaker-disjoint splits and a 12-video gold set created an identity-channel confound that random K-fold CV hid. The repo's `COUNCIL_FINAL_DECISION.md` documents the audit and `5x3_cv_results.json` records the falsification: a +0.163 per-language normalization claim reversed to −0.127 (p = 0.0004) under 5×3 repeated CV.
 
-We tested it on the gold set: Comedy Central Stand-Up + Montreux Comedy. 12 specials. English, Spanish, French. Mike Birbiglia, Mae Martin, Élodie Poux, Jayde Adams, Nash. Real laughs marked at real timestamps — the visualization in the video is driven straight from data/gold_labels/.
+What survived the audit:
+- Architecture: Cascade Gate (text confidence gates audio) + 1.04M params
+- Numbers: 5×3 repeated speaker-disjoint CV, humor AUC 0.6924 ± 0.0359, gold AUC 0.5453 ± 0.1313
+- Methodology: a reproducible 5×3 repeated speaker-disjoint CV harness (`laugho_cv.py`) and a falsification experiment (`run_5x3_cv.py`)
+- Paper draft: *"Evaluating Speech-Humor Models Without Identity Leakage: A Self-Falsification Case Study"* (in `arxiv_submission/`, submission deferred — see `PIVOT_TO_PAPER.md`)
+
+The transcript was never the joke. The laugh is in the room. The next 0.05 AUC doesn't come from compute. It comes from humans labeling laughter on new clips across more languages — n=12 is too small to support any single-fold number.
+
+If you can spare a few hours, PRs welcome.
+
+github.com/Das-rebel/HaHaScore
 
 0:00 Every comedian knows the bomb
 0:09 The transcript was never the joke
 0:15 How HaHaScore listens — the Cascade Gate
 0:32 Why 355M parameters is a coin flip (and 1M params beats it)
-0:48 Tested on the gold set — Mike Birbiglia on stage
-1:06 Humor ≠ laughter (0.860 vs 0.590)
-1:20 We ran it on this video. It passed.
-
-Architecture: RoBERTa-large + WavLM-base-plus + 23-dim prosody + 4-dim position, fused via the Cascade Gate (text confidence as prior → audio gated → BiGRU arcs → sigmoid per-segment score). 1.04M params beats cross-attention by +0.002 AUC.
-
-The model is a feature, not a bug. Humor ≠ Laughter — pseudo-label AUC is 0.860, gold-label AUC is 0.590. The 0.27 gap is the audience. Predict the bit; humans still decide to laugh.
-
-Five-line inference. HuggingFace: Hayasuki/hahascore-cascade. MIT license. Try it on your podcast, your standup set, your tutorial — anywhere speech happens.
-
-github.com/Das-rebel/HaHaScore
-
-If you can spare a few hours on a clip and a CSV — open a PR. The next 0.02 AUC doesn't come from compute.
-
-#humordetection #computervision #openai #speechrecognition #machinelearning #audio #openresearch #standup #computationalcreativity
+0:48 Honest 5-fold speaker-disjoint CV: humor 0.69 / gold 0.55
+1:06 Single-fold 0.860 was leakage. 5×3 CV caught it.
+1:20 We ran it on this video. Honest number, no flourish.
